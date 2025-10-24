@@ -1,43 +1,66 @@
-# Astro Starter Kit: Minimal
+# Tools
 
-```sh
-bun create astro@latest -- --template minimal
+A collection of utility tools built with Astro, React, and shadcn/ui.
+
+## 🚀 Quick Start
+
+```bash
+bun install
+bun dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Visit `http://localhost:4321`
 
-## 🚀 Project Structure
+## 📝 Creating a New Tool
 
-Inside of your Astro project, you'll see the following folders and files:
+Simply create a new React component in `src/tools/`:
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```tsx
+// src/tools/MyNewTool.tsx
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+export default function MyNewTool() {
+  return (
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="mx-auto max-w-3xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>My New Tool</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Your tool content */}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+The page will be **automatically generated** at `/my-new-tool` when you run `bun dev` or `bun build`.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+### Naming Convention
 
-Any static assets, like images, can be placed in the `public/` directory.
+Component names are converted to kebab-case URLs:
+- `SgTaxCalculator.tsx` → `/sg-tax-calculator`
+- `MyNewTool.tsx` → `/my-new-tool`
+- `CompoundGrowth.tsx` → `/compound-growth`
 
 ## 🧞 Commands
 
-All commands are run from the root of the project, from a terminal:
+| Command              | Action                                      |
+| :------------------- | :------------------------------------------ |
+| `bun install`        | Install dependencies                        |
+| `bun dev`            | Start dev server at `localhost:4321`        |
+| `bun build`          | Build production site to `./dist/`          |
+| `bun preview`        | Preview build locally                       |
+| `bun generate:pages` | Generate Astro pages from tools (auto-run)  |
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `bun install`             | Installs dependencies                            |
-| `bun dev`             | Starts local dev server at `localhost:4321`      |
-| `bun build`           | Build your production site to `./dist/`          |
-| `bun preview`         | Preview your build locally, before deploying     |
-| `bun astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `bun astro -- --help` | Get help using the Astro CLI                     |
+## 🎨 Available Components
 
-## 👀 Want to learn more?
+- Card, CardContent, CardHeader, CardTitle, CardDescription
+- Input
+- Label
+- Button
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Add more with: `bunx shadcn@latest add <component>`
