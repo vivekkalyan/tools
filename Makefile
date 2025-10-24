@@ -18,3 +18,14 @@ format: ## Format with biome
 .PHONY: lint
 lint: ## Lint with biome
 	@bunx biome lint --fix
+
+.PHONY: check-requirements
+check-requirements: ## Ensure that all requirements are installed
+	@command -v pre-commit > /dev/null 2>&1 || (echo "pre-commit not installed")
+
+.PHONY: hooks
+hooks: .git/hooks/pre-commit ## Run pre-commit hooks on all files
+	pre-commit run --color=always --all-files --hook-stage commit
+
+.git/hooks/pre-commit: .pre-commit-config.yaml
+	pre-commit install
