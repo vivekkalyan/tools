@@ -67,7 +67,7 @@ export default function SgTaxCalculator() {
   const [income, setIncome] = useState<string>("");
 
   const incomeNum = parseFloat(income) || 0;
-  const { tax, bracket, rate } = calculateTax(incomeNum);
+  const { tax, bracket } = calculateTax(incomeNum);
   const effectiveRate = incomeNum > 0 ? (tax / incomeNum) * 100 : 0;
   const takeHome = incomeNum - tax;
   const monthlyTakeHome = takeHome / 12;
