@@ -1,4 +1,11 @@
+const TOOL_SLUG_OVERRIDES: Record<string, string> = {
+  SeattleSingaporeTimeCheck: "sg-time-check",
+};
+
 export function toKebabCase(componentName: string): string {
+  const override = TOOL_SLUG_OVERRIDES[componentName];
+  if (override) return override;
+
   return componentName
     .replace(/([A-Z])/g, "-$1")
     .toLowerCase()
