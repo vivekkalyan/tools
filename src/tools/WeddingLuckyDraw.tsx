@@ -315,7 +315,11 @@ export default function WeddingLuckyDraw() {
         </div>
 
         <div className="wd-belt">
-          {phase === "countdown" ? (
+          {phase === "countdown" && timeLeft === 0 ? (
+            <p className="wd-toolate">
+              Too late<span className="wd-toolate-sub">— award anyway, or redraw</span>
+            </p>
+          ) : phase === "countdown" ? (
             <div className="wd-ringwrap">
               <div className={`wd-ring${timeLeft <= 5 ? " wd-ring--warn" : ""}`}>
                 <svg width="156" height="156" aria-hidden="true">
@@ -515,6 +519,10 @@ const styles = `
 .wd-result--win{background:var(--foil);background-size:200% auto;-webkit-background-clip:text;background-clip:text;
   color:transparent;animation:wd-rise .5s ease both, wd-shimmer 3.5s linear infinite}
 .wd-result--late{color:${COLORS.red}}
+.wd-toolate{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px;
+  font-size:clamp(30px,4.6vw,52px);font-weight:500;color:${COLORS.red};animation:wd-rise .4s ease both}
+.wd-toolate-sub{font-family:'Cinzel',serif;font-size:11px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted)}
 
 /* ——— controls ——— */
 .wd-controls{margin-top:30px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
