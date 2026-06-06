@@ -54,18 +54,19 @@ const SPIN_TAIL_MS = 620;
 type Phase = "idle" | "spinning" | "locked" | "countdown" | "result";
 
 const COLORS = {
-  bg: "#f7f3ec",
-  bg2: "#fdfbf6",
-  ink: "#3a342b",
+  bg: "#f3ece0", // warm ivory
+  bg2: "#fbf6ec",
+  ink: "#2b2419", // deep espresso
   muted: "#8a8170",
-  gold: "#b08d4f",
-  goldDeep: "#8a6d36",
-  line: "#e3dac8",
-  green: "#5c8a5c",
-  red: "#b05a4f",
+  gold: "#bd9648",
+  goldDeep: "#8a6a2e",
+  goldLight: "#e7cf94",
+  line: "#dccfb4",
+  green: "#5a7d56",
+  red: "#a8503f",
 };
 
-const CONFETTI_COLORS = ["#b08d4f", "#e9d7ad", "#8a6d36", "#ffffff", "#d8c79b"];
+const CONFETTI_COLORS = ["#bd9648", "#e7cf94", "#8a6a2e", "#fbf6ec", "#cdb275", "#5a7d56"];
 
 export default function WeddingLuckyDraw() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -171,8 +172,9 @@ export default function WeddingLuckyDraw() {
     countdownInterval.current = window.setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
+          // Timer reaches zero but we DON'T auto-decide. Stay in countdown so the
+          // MC can still award a late arrival (or redraw) at their discretion.
           if (countdownInterval.current) window.clearInterval(countdownInterval.current);
-          // time's up — handled by effect below
           return 0;
         }
         return prev - 1;
@@ -241,15 +243,9 @@ export default function WeddingLuckyDraw() {
     setPhase("result");
   }, [removeWinnerFromPool]);
 
-  // Fire "too late" when the countdown hits zero.
-  useEffect(() => {
-    if (phase === "countdown" && timeLeft === 0) {
-      tooLate();
-    }
-  }, [phase, timeLeft, tooLate]);
-
   const allDrawn = pool.length === 0;
   const drawDisabled = phase === "spinning" || phase === "locked" || phase === "countdown";
+  const currentPrizeLabel = PRIZE_NAMES[prizeIndex] ?? `Prize ${prizeIndex + 1}`;
 
   const nameClass = (() => {
     if (phase === "idle" || (phase === "result" && resultKind === "late")) {
@@ -264,19 +260,33 @@ export default function WeddingLuckyDraw() {
     <div ref={rootRef} className="wd-root">
       <style>{styles}</style>
 
-      <button
-        type="button"
-        className="wd-fs-btn"
-        onClick={toggleFullscreen}
-        aria-label={isFullscreen ? "Exit full screen" : "Enter full screen"}
-        title={isFullscreen ? "Exit full screen" : "Full screen"}
-      >
-        {isFullscreen ? <Minimize size={22} /> : <Maximize size={22} />}
-      </button>
+      {/* atmospheric layers */}
+      <div className="wd-bg" aria-hidden="true" />
+      <div className="wd-grain" aria-hidden="true" />
+      <div className="wd-deco-frame" aria-hidden="true" />
+
+      {/* Top-right hover zone: keeps the toggle hidden until the cursor approaches
+          the corner — works the same windowed or fullscreen. */}
+      <div className="wd-fs-zone">
+        <button
+          type="button"
+          className="wd-fs-btn"
+          onClick={toggleFullscreen}
+          aria-label={isFullscreen ? "Exit full screen" : "Enter full screen"}
+          title={isFullscreen ? "Exit full screen" : "Full screen"}
+        >
+          {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+        </button>
+      </div>
 
       <div className="wd-stage">
-        <div className="wd-eyebrow">Wedding Lucky Draw</div>
-        <div className="wd-names">Kangraye &amp; Qiongdan</div>
+        <header className="wd-head">
+          <div className="wd-eyebrow">The Lucky Draw</div>
+          <h1 className="wd-names">
+            Kangraye <span className="wd-amp">&amp;</span> Qiongdan
+          </h1>
+          <Ornament className="wd-head-rule" />
+        </header>
 
         <div className="wd-prizebar">
           {PRIZE_NAMES.map((p, i) => {
@@ -284,62 +294,72 @@ export default function WeddingLuckyDraw() {
               i < prizeIndex ? "wd-chip wd-chip--done" : i === prizeIndex ? "wd-chip wd-chip--active" : "wd-chip";
             return (
               <span key={p} className={cls}>
-                {i < prizeIndex ? "✓ " : ""}
+                <span className="wd-chip-dot" />
                 {p}
               </span>
             );
           })}
         </div>
 
-        <div className={`wd-frame${phase === "locked" || phase === "countdown" ? " wd-frame--locked" : ""}`}>
+        <div
+          className={`wd-frame${phase === "locked" || phase === "countdown" || (phase === "result" && resultKind === "win") ? " wd-frame--locked" : ""}`}
+        >
           <div className="wd-wash" />
-          <div className={nameClass} key={displayName || "idle"}>
-            {allDrawn && phase === "idle" ? "All prizes awarded 🎊" : displayName || "Press “Draw” to begin"}
+          <div className="wd-corner wd-corner--tl" />
+          <div className="wd-corner wd-corner--tr" />
+          <div className="wd-corner wd-corner--bl" />
+          <div className="wd-corner wd-corner--br" />
+          <div className={nameClass} key={displayName || "idle"} data-text={displayName}>
+            {allDrawn && phase === "idle" ? "Every prize has found its winner" : displayName || "Draw to begin"}
           </div>
         </div>
 
-        {phase === "countdown" && (
-          <div className="wd-ringwrap">
-            <div className="wd-ring">
-              <svg width="150" height="150" aria-hidden="true">
-                <circle cx="75" cy="75" r={RING_RADIUS} fill="none" stroke={COLORS.line} strokeWidth="7" />
-                <circle
-                  cx="75"
-                  cy="75"
-                  r={RING_RADIUS}
-                  fill="none"
-                  stroke={COLORS.gold}
-                  strokeWidth="7"
-                  strokeLinecap="round"
-                  strokeDasharray={RING_CIRCUMFERENCE}
-                  strokeDashoffset={RING_CIRCUMFERENCE * (1 - timeLeft / COUNTDOWN_SECONDS)}
-                  style={{
-                    transition: "stroke-dashoffset 1s linear",
-                    transform: "rotate(-90deg)",
-                    transformOrigin: "center",
-                  }}
-                />
-              </svg>
-              <div className={`wd-num${timeLeft <= 5 ? " wd-num--warn" : ""}`}>{Math.max(timeLeft, 0)}</div>
+        <div className="wd-belt">
+          {phase === "countdown" ? (
+            <div className="wd-ringwrap">
+              <div className={`wd-ring${timeLeft <= 5 ? " wd-ring--warn" : ""}`}>
+                <svg width="156" height="156" aria-hidden="true">
+                  <circle cx="78" cy="78" r={RING_RADIUS} fill="none" stroke={COLORS.line} strokeWidth="4" />
+                  <circle
+                    className="wd-ring-fill"
+                    cx="78"
+                    cy="78"
+                    r={RING_RADIUS}
+                    fill="none"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeDasharray={RING_CIRCUMFERENCE}
+                    strokeDashoffset={RING_CIRCUMFERENCE * (1 - timeLeft / COUNTDOWN_SECONDS)}
+                  />
+                </svg>
+                <div className="wd-num">{Math.max(timeLeft, 0)}</div>
+                <div className="wd-num-label">seconds</div>
+              </div>
             </div>
-          </div>
-        )}
-
-        {resultText && <div className={`wd-result${resultKind ? ` wd-result--${resultKind}` : ""}`}>{resultText}</div>}
+          ) : resultText ? (
+            <div className={`wd-result${resultKind ? ` wd-result--${resultKind}` : ""}`}>{resultText}</div>
+          ) : (
+            <p className="wd-prompt-line">
+              Now drawing for the <em>{currentPrizeLabel}</em>
+            </p>
+          )}
+        </div>
 
         <div className="wd-controls">
           <button type="button" className="wd-btn wd-btn--draw" onClick={draw} disabled={drawDisabled || allDrawn}>
-            Draw
+            <span>{phase === "result" && resultKind === "win" ? "Draw Next" : "Draw"}</span>
           </button>
           <button type="button" className="wd-btn wd-btn--claim" onClick={award} disabled={phase !== "countdown"}>
-            ✓ On stage — Award prize
+            Award Prize
           </button>
           <button type="button" className="wd-btn wd-btn--late" onClick={tooLate} disabled={phase !== "countdown"}>
-            Too late — Redraw
+            Redraw
           </button>
         </div>
 
-        <div className="wd-meta">{pool.length} names remaining</div>
+        <div className="wd-meta">
+          {pool.length} {pool.length === 1 ? "name" : "names"} still in the draw
+        </div>
       </div>
 
       <canvas ref={canvasRef} className="wd-confetti-canvas" tabIndex={-1} aria-hidden="true" />
@@ -347,74 +367,185 @@ export default function WeddingLuckyDraw() {
   );
 }
 
+// Small deco rule: a hairline with a center diamond ornament.
+function Ornament({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 220 12" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+      <line x1="6" y1="6" x2="92" y2="6" stroke="currentColor" strokeWidth="1" />
+      <line x1="128" y1="6" x2="214" y2="6" stroke="currentColor" strokeWidth="1" />
+      <circle cx="100" cy="6" r="2" fill="currentColor" />
+      <circle cx="120" cy="6" r="2" fill="currentColor" />
+      <path d="M110 1 L114 6 L110 11 L106 6 Z" fill="currentColor" />
+    </svg>
+  );
+}
+
 const styles = `
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Cinzel:wght@400;500;600&display=swap');
+
 .wd-root{
-  position:relative;
-  font-family:Georgia,'Times New Roman',serif;
-  background:radial-gradient(circle at 50% 18%, ${COLORS.bg2}, ${COLORS.bg} 75%);
-  color:${COLORS.ink};
-  min-height:100vh;
+  --gold:${COLORS.gold};--gold-deep:${COLORS.goldDeep};--gold-light:${COLORS.goldLight};
+  --ink:${COLORS.ink};--muted:${COLORS.muted};--line:${COLORS.line};
+  --foil:linear-gradient(105deg,#7a5d28 0%,#a9842f 24%,#caa44e 44%,#e3c878 50%,#caa44e 56%,#a9842f 76%,#7a5d28 100%);
+  position:relative;overflow:hidden;
+  min-height:100vh;width:100%;
   display:flex;align-items:center;justify-content:center;
-  overflow:hidden;
+  font-family:'Cormorant Garamond',Georgia,serif;
+  color:var(--ink);
+  background:${COLORS.bg};
+  isolation:isolate;
 }
 .wd-root:fullscreen{width:100vw;height:100vh}
+
+/* ——— atmosphere ——— */
+.wd-bg{position:absolute;inset:0;z-index:-2;
+  background:
+    radial-gradient(120% 80% at 50% -10%, #fdf8ee 0%, ${COLORS.bg2} 38%, ${COLORS.bg} 72%, #e9e0cf 100%),
+    radial-gradient(60% 50% at 50% 42%, rgba(231,207,148,.35), transparent 70%);}
+.wd-grain{position:absolute;inset:0;z-index:-1;opacity:.05;pointer-events:none;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+.wd-deco-frame{position:absolute;inset:22px;z-index:0;pointer-events:none;border-radius:2px;
+  border:1px solid color-mix(in srgb, var(--gold) 38%, transparent);
+  box-shadow:inset 0 0 0 4px ${COLORS.bg2}, inset 0 0 0 5px color-mix(in srgb, var(--gold) 22%, transparent);}
+.wd-deco-frame::before,.wd-deco-frame::after{content:"";position:absolute;width:22px;height:22px;}
+.wd-deco-frame::before{top:-1px;left:-1px;border-top:2px solid var(--gold);border-left:2px solid var(--gold)}
+.wd-deco-frame::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--gold);border-right:2px solid var(--gold)}
+
+/* ——— fullscreen toggle ——— */
+.wd-fs-zone{position:absolute;top:0;right:0;width:140px;height:120px;z-index:20}
 .wd-fs-btn{
-  position:absolute;top:18px;right:18px;z-index:20;
-  width:48px;height:48px;display:flex;align-items:center;justify-content:center;
-  border:1px solid ${COLORS.line};border-radius:8px;background:rgba(255,255,255,.7);
-  color:${COLORS.goldDeep};cursor:pointer;backdrop-filter:blur(4px);
-  opacity:0;transform:translateY(-6px);transition:opacity .22s ease,transform .22s ease,background .18s ease,box-shadow .18s ease;
+  position:absolute;top:38px;right:38px;
+  width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  border:1px solid color-mix(in srgb, var(--gold) 45%, transparent);border-radius:50%;
+  background:rgba(255,255,255,.55);color:var(--gold-deep);cursor:pointer;backdrop-filter:blur(6px);
+  opacity:0;transform:translateY(-6px);
+  transition:opacity .25s ease,transform .25s ease,background .18s ease,box-shadow .18s ease;
   pointer-events:none;
 }
-/* Reveal on hovering anywhere in the app, or when the button itself is focused. */
-.wd-root:hover .wd-fs-btn,
-.wd-fs-btn:focus-visible{opacity:1;transform:translateY(0);pointer-events:auto}
-.wd-fs-btn:hover{background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.08)}
-.wd-stage{width:min(1100px,94vw);text-align:center;padding:40px 28px;position:relative;z-index:1}
-.wd-eyebrow{letter-spacing:.4em;text-transform:uppercase;font-size:14px;color:${COLORS.goldDeep};
-  font-family:'Helvetica Neue',Arial,sans-serif;font-weight:600;margin-bottom:8px}
-.wd-names{font-size:20px;color:${COLORS.muted};font-style:italic;margin-bottom:8px}
-.wd-prizebar{display:inline-flex;gap:12px;margin:18px 0 30px;flex-wrap:wrap;justify-content:center}
-.wd-chip{padding:7px 20px;border-radius:999px;border:1px solid ${COLORS.line};
-  font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;letter-spacing:.08em;color:${COLORS.muted}}
-.wd-chip--active{border-color:${COLORS.gold};color:${COLORS.goldDeep};background:#fff;box-shadow:0 0 0 3px rgba(176,141,79,.12)}
-.wd-chip--done{border-color:${COLORS.green};color:${COLORS.green}}
-.wd-frame{
-  position:relative;height:300px;display:flex;align-items:center;justify-content:center;
-  border:1px solid ${COLORS.line};border-radius:10px;
-  background:linear-gradient(180deg,#fff,${COLORS.bg});
-  box-shadow:inset 0 2px 0 #fff,0 22px 60px rgba(58,52,43,.08);overflow:hidden;
-}
-.wd-frame::before,.wd-frame::after{content:"";position:absolute;left:24px;right:24px;height:1px;
-  background:${COLORS.gold};opacity:.3}
-.wd-frame::before{top:18px}.wd-frame::after{bottom:18px}
-.wd-wash{position:absolute;inset:0;opacity:0;transition:opacity .6s ease;
-  background:radial-gradient(circle at 50% 50%, rgba(233,215,173,.45), transparent 60%)}
-.wd-frame--locked .wd-wash{opacity:1}
-.wd-name{font-size:clamp(44px,8.5vw,104px);line-height:1.05;color:${COLORS.ink};
-  position:relative;z-index:1;padding:0 16px}
-.wd-name--rolling{color:${COLORS.muted};opacity:.92}
-.wd-name--idle{font-size:clamp(26px,4vw,40px);color:${COLORS.muted};font-style:italic}
-.wd-name--locked{color:${COLORS.goldDeep};animation:wd-lockpop .55s cubic-bezier(.2,.8,.3,1.2)}
-@keyframes wd-lockpop{0%{transform:scale(.9);opacity:.4}60%{transform:scale(1.08)}100%{transform:scale(1)}}
-.wd-ringwrap{margin:26px auto 0;height:150px;display:flex;align-items:center;justify-content:center}
-.wd-ring{position:relative;width:150px;height:150px}
+/* Reveal only when the cursor is near the corner (or the button is focused). */
+.wd-fs-zone:hover .wd-fs-btn,.wd-fs-btn:focus-visible{opacity:1;transform:translateY(0);pointer-events:auto}
+.wd-fs-btn:hover{background:#fff;box-shadow:0 6px 20px rgba(138,106,46,.22)}
+
+/* ——— stage / entrance ——— */
+.wd-stage{position:relative;z-index:1;width:min(1080px,90vw);text-align:center;padding:48px 32px}
+.wd-stage>*{animation:wd-rise .8s cubic-bezier(.2,.7,.3,1) both}
+.wd-head{animation-delay:.05s}.wd-prizebar{animation-delay:.16s}
+.wd-frame{animation-delay:.26s}.wd-belt{animation-delay:.36s}
+.wd-controls{animation-delay:.44s}.wd-meta{animation-delay:.52s}
+@keyframes wd-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ——— header ——— */
+.wd-head{margin-bottom:26px}
+.wd-eyebrow{font-family:'Cinzel',serif;letter-spacing:.46em;text-transform:uppercase;
+  font-size:13px;font-weight:500;color:var(--gold-deep);margin:0 0 12px;padding-left:.46em}
+.wd-names{margin:0;font-weight:500;font-size:clamp(30px,4.4vw,52px);line-height:1.05;color:var(--ink);
+  letter-spacing:.01em}
+.wd-amp{font-style:italic;font-weight:400;
+  background:var(--foil);-webkit-background-clip:text;background-clip:text;color:transparent;
+  padding:0 .12em}
+.wd-head-rule{display:block;width:240px;max-width:60%;height:14px;margin:16px auto 0;color:var(--gold)}
+
+/* ——— prize progress ——— */
+.wd-prizebar{display:inline-flex;gap:10px;margin-bottom:34px;flex-wrap:wrap;justify-content:center}
+.wd-chip{display:inline-flex;align-items:center;gap:9px;
+  font-family:'Cinzel',serif;font-size:12px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+  padding:9px 20px;border-radius:2px;color:var(--muted);
+  border:1px solid var(--line);background:rgba(255,255,255,.35);
+  transition:all .3s ease}
+.wd-chip-dot{width:6px;height:6px;border-radius:50%;background:var(--line);transition:all .3s ease}
+.wd-chip--active{color:var(--ink);border-color:var(--gold);background:#fff;
+  box-shadow:0 6px 18px rgba(138,106,46,.14)}
+.wd-chip--active .wd-chip-dot{background:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 28%,transparent)}
+.wd-chip--done{color:var(--gold-deep);border-color:color-mix(in srgb,var(--gold) 40%,transparent)}
+.wd-chip--done .wd-chip-dot{background:var(--gold)}
+
+/* ——— name frame: the hero ——— */
+.wd-frame{position:relative;height:clamp(220px,34vh,330px);display:flex;align-items:center;justify-content:center;
+  padding:0 40px;border-radius:3px;overflow:hidden;
+  background:linear-gradient(180deg,#fffdf8,#f6efe1);
+  border:1px solid color-mix(in srgb,var(--gold) 26%,transparent);
+  box-shadow:inset 0 1px 0 #fff, 0 30px 70px -28px rgba(80,60,24,.4), 0 2px 0 #fff}
+.wd-frame::before,.wd-frame::after{content:"";position:absolute;left:50%;transform:translateX(-50%);
+  width:62%;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--gold) 55%,transparent),transparent)}
+.wd-frame::before{top:20px}.wd-frame::after{bottom:20px}
+.wd-corner{position:absolute;width:16px;height:16px;border:1.5px solid color-mix(in srgb,var(--gold) 55%,transparent);opacity:.7}
+.wd-corner--tl{top:12px;left:12px;border-right:0;border-bottom:0}
+.wd-corner--tr{top:12px;right:12px;border-left:0;border-bottom:0}
+.wd-corner--bl{bottom:12px;left:12px;border-right:0;border-top:0}
+.wd-corner--br{bottom:12px;right:12px;border-left:0;border-top:0}
+.wd-wash{position:absolute;inset:0;opacity:0;transition:opacity .7s ease;
+  background:radial-gradient(60% 75% at 50% 50%, rgba(231,207,148,.55), transparent 70%)}
+.wd-frame--locked .wd-wash{opacity:1;animation:wd-flare 1s ease}
+@keyframes wd-flare{0%{opacity:0;transform:scale(.85)}40%{opacity:.95}100%{opacity:1;transform:scale(1)}}
+
+.wd-name{position:relative;z-index:1;line-height:1.04;font-weight:500;
+  font-size:clamp(40px,8vw,100px);color:var(--ink);
+  max-width:100%;word-break:break-word}
+.wd-name--rolling{color:color-mix(in srgb,var(--ink) 72%,transparent);opacity:.9;filter:blur(.4px);transition:none}
+.wd-name--idle{font-style:italic;font-weight:400;font-size:clamp(24px,3.6vw,40px);color:color-mix(in srgb,var(--ink) 55%,transparent)}
+.wd-name--locked{font-weight:600;letter-spacing:.005em;
+  background:var(--foil);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
+  -webkit-text-fill-color:transparent;
+  animation:wd-lockpop .6s cubic-bezier(.2,.8,.3,1.25), wd-shimmer 3.5s linear .6s infinite;
+  filter:drop-shadow(0 2px 1px rgba(120,90,30,.18))}
+@keyframes wd-lockpop{0%{transform:scale(.88);opacity:.3}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes wd-shimmer{0%{background-position:0% center}100%{background-position:200% center}}
+
+/* ——— belt: countdown / result / prompt all share this row ——— */
+.wd-belt{min-height:172px;display:flex;align-items:center;justify-content:center;margin-top:22px}
+.wd-prompt-line{margin:0;font-size:clamp(18px,2.4vw,24px);color:var(--muted)}
+.wd-prompt-line em{font-style:italic;color:var(--gold-deep)}
+
+.wd-ringwrap{display:flex;align-items:center;justify-content:center}
+.wd-ring{position:relative;width:156px;height:156px}
+.wd-ring svg circle{transform:rotate(-90deg);transform-origin:center}
+.wd-ring-fill{stroke:var(--gold);transition:stroke-dashoffset 1s linear, stroke .4s ease;
+  filter:drop-shadow(0 0 6px color-mix(in srgb,var(--gold) 55%,transparent))}
+.wd-ring--warn .wd-ring-fill{stroke:${COLORS.red};filter:drop-shadow(0 0 7px color-mix(in srgb,${COLORS.red} 55%,transparent))}
 .wd-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-size:56px;color:${COLORS.goldDeep}}
-.wd-num--warn{color:${COLORS.red}}
-.wd-controls{margin-top:34px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
-.wd-btn{font-family:inherit;font-size:19px;padding:17px 36px;border-radius:6px;border:1px solid ${COLORS.line};
-  background:#fff;color:${COLORS.ink};cursor:pointer;transition:all .18s ease;letter-spacing:.03em}
-.wd-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 22px rgba(0,0,0,.08)}
-.wd-btn:disabled{opacity:.32;cursor:not-allowed}
-.wd-btn--draw{background:${COLORS.gold};color:#fff;border-color:${COLORS.goldDeep};font-size:22px;padding:19px 52px;
-  box-shadow:0 8px 28px rgba(176,141,79,.3)}
-.wd-btn--claim{background:${COLORS.green};color:#fff;border-color:#4a7a4a}
-.wd-btn--late{background:#fff;color:${COLORS.red};border-color:${COLORS.red}}
-.wd-result{margin-top:22px;font-size:24px;min-height:1.4em}
-.wd-result--win{color:${COLORS.green}}
-.wd-result--late{color:${COLORS.red};font-style:italic}
-.wd-meta{margin-top:14px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;
-  color:${COLORS.muted};letter-spacing:.12em;text-transform:uppercase}
+  font-family:'Cinzel',serif;font-variant-numeric:lining-nums tabular-nums;
+  font-size:52px;font-weight:500;color:var(--gold-deep);line-height:1;
+  transform:translateY(-15px)}
+.wd-ring--warn .wd-num{color:${COLORS.red};animation:wd-pulse 1s ease-in-out infinite}
+@keyframes wd-pulse{0%,100%{transform:translateY(-15px) scale(1)}50%{transform:translateY(-15px) scale(1.12)}}
+.wd-num-label{position:absolute;left:0;right:0;bottom:38px;font-family:'Cinzel',serif;
+  font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted);padding-left:.28em}
+
+.wd-result{font-size:clamp(22px,3.2vw,34px);font-style:italic;font-weight:500;animation:wd-rise .5s ease both}
+.wd-result--win{background:var(--foil);background-size:200% auto;-webkit-background-clip:text;background-clip:text;
+  color:transparent;animation:wd-rise .5s ease both, wd-shimmer 3.5s linear infinite}
+.wd-result--late{color:${COLORS.red}}
+
+/* ——— controls ——— */
+.wd-controls{margin-top:30px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.wd-btn{font-family:'Cinzel',serif;font-size:14px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+  padding:16px 30px;border-radius:2px;cursor:pointer;
+  border:1px solid var(--line);background:rgba(255,255,255,.55);color:var(--ink);
+  transition:transform .18s ease,box-shadow .22s ease,background .2s ease,opacity .2s ease,border-color .2s ease}
+.wd-btn:hover:not(:disabled){transform:translateY(-2px)}
+.wd-btn:disabled{opacity:.3;cursor:not-allowed}
+.wd-btn--draw{position:relative;overflow:hidden;color:#fff8e8;border:0;
+  font-size:16px;letter-spacing:.18em;padding:18px 48px;
+  background:linear-gradient(135deg,var(--gold-deep),var(--gold) 55%,var(--gold-deep));
+  box-shadow:0 12px 30px -8px rgba(138,106,46,.6), inset 0 1px 0 rgba(255,255,255,.45)}
+.wd-btn--draw::after{content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg)}
+.wd-btn--draw:hover:not(:disabled){box-shadow:0 16px 36px -8px rgba(138,106,46,.7), inset 0 1px 0 rgba(255,255,255,.5)}
+.wd-btn--draw:hover:not(:disabled)::after{animation:wd-sheen .9s ease}
+@keyframes wd-sheen{from{left:-120%}to{left:160%}}
+.wd-btn--claim{border-color:color-mix(in srgb,${COLORS.green} 55%,transparent);color:${COLORS.green};background:rgba(255,255,255,.7)}
+.wd-btn--claim:hover:not(:disabled){background:${COLORS.green};color:#fff;border-color:${COLORS.green};box-shadow:0 12px 26px -10px rgba(90,125,86,.7)}
+.wd-btn--late{border-color:color-mix(in srgb,${COLORS.red} 45%,transparent);color:${COLORS.red};background:rgba(255,255,255,.7)}
+.wd-btn--late:hover:not(:disabled){background:${COLORS.red};color:#fff;border-color:${COLORS.red};box-shadow:0 12px 26px -10px rgba(168,80,63,.6)}
+
+.wd-meta{margin-top:24px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--muted);padding-left:.22em}
+
 .wd-confetti-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
+
+@media (prefers-reduced-motion:reduce){
+  .wd-stage>*{animation:none}
+  .wd-name--locked,.wd-result--win{animation:none}
+  .wd-num{animation:none}
+}
 `;
