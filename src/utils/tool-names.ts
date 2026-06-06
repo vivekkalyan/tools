@@ -1,5 +1,6 @@
 const TOOL_SLUG_OVERRIDES: Record<string, string> = {
   SeattleSingaporeTimeCheck: "sg-time-check",
+  WeddingLuckyDraw: "wedding-lucky-draw",
 };
 
 export function toKebabCase(componentName: string): string {
