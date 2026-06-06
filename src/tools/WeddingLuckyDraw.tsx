@@ -283,7 +283,7 @@ export default function WeddingLuckyDraw() {
         <header className="wd-head">
           <div className="wd-eyebrow">The Lucky Draw</div>
           <h1 className="wd-names">
-            Kangraye <span className="wd-amp">&amp;</span> Qiongdan
+            Kang Raye <span className="wd-amp">&amp;</span> Qiong Dan
           </h1>
           <Ornament className="wd-head-rule" />
         </header>
