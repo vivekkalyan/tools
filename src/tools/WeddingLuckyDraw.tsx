@@ -1,46 +1,197 @@
 import confetti from "canvas-confetti";
 import { Maximize, Minimize } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-// ——— EDIT THESE LATER ———
-// Placeholder list = football legends, 2006–2025 era (Chelsea + Liverpool).
-// Swap for the real guest names closer to the day.
-const GUESTS: string[] = [
-  // Chelsea (for the groom)
-  "John Terry",
-  "Frank Lampard",
-  "Didier Drogba",
-  "Petr Čech",
-  "Ashley Cole",
-  "Michael Essien",
-  "Eden Hazard",
-  "N'Golo Kanté",
-  "Cesc Fàbregas",
-  "Branislav Ivanović",
-  "Gianfranco Zola",
-  "Thiago Silva",
-  "Reece James",
-  "Cole Palmer",
-  "José Mourinho",
-  // Liverpool (for the bride)
-  "Steven Gerrard",
-  "Fernando Torres",
-  "Mohamed Salah",
-  "Virgil van Dijk",
-  "Sadio Mané",
-  "Luis Suárez",
-  "Jamie Carragher",
-  "Xabi Alonso",
-  "Trent Alexander-Arnold",
-  "Alisson Becker",
-  "Roberto Firmino",
-  "Pepe Reina",
-  "Dirk Kuyt",
-  "Jürgen Klopp",
+type Guest = {
+  id: number;
+  name: string;
+  isFather: boolean;
+};
+
+const GUESTS: Guest[] = [
+  { id: 1, name: "Pek Teck Huat", isFather: true },
+  { id: 2, name: "Yap Geok Hong", isFather: false },
+  { id: 3, name: "Pek Yun Bi", isFather: false },
+  { id: 4, name: "Tan Hsien Zhe", isFather: true },
+  { id: 5, name: "Mercer", isFather: false },
+  { id: 6, name: "Pek Fu Ren", isFather: false },
+  { id: 7, name: "Pek Ai Wah", isFather: false },
+  { id: 8, name: "Leow Kee Teck", isFather: true },
+  { id: 9, name: "Gigi", isFather: false },
+  { id: 10, name: "Wong Woon Mei", isFather: false },
+  { id: 11, name: "Leow Tong Le", isFather: false },
+  { id: 12, name: "Bo Bo", isFather: false },
+  { id: 13, name: "Pek Jiamin", isFather: false },
+  { id: 14, name: "Zephyr Loh", isFather: true },
+  { id: 15, name: "Naomi Loh", isFather: false },
+  { id: 16, name: "Mr Peh Kok Kheng", isFather: true },
+  { id: 17, name: "Mrs Peh Kok Kheng", isFather: false },
+  { id: 18, name: "Mr Peh Kok Heng", isFather: true },
+  { id: 19, name: "Mrs Peh Kok Heng", isFather: false },
+  { id: 20, name: "Kenneth Tan", isFather: true },
+  { id: 21, name: "Mr Tan Ming Tong", isFather: true },
+  { id: 22, name: "Mrs Tan Ming Tong", isFather: false },
+  { id: 23, name: "Mr Yap Ee", isFather: true },
+  { id: 24, name: "Mrs Yap Ee", isFather: false },
+  { id: 25, name: "Mr Yap Bock Suan", isFather: true },
+  { id: 26, name: "Mrs Yap Bock Suan", isFather: false },
+  { id: 27, name: "Mr Yap Bock Kee", isFather: true },
+  { id: 28, name: "Mrs Yap Bock Kee", isFather: false },
+  { id: 29, name: "Mr Yap Eng Khoon", isFather: true },
+  { id: 30, name: "Mrs Yap Eng Khoon", isFather: false },
+  { id: 31, name: "Go Bong Meng", isFather: true },
+  { id: 32, name: "Hedges Go", isFather: false },
+  { id: 33, name: "Yap Geok Moy", isFather: false },
+  { id: 34, name: "Pauline / Victor", isFather: false },
+  { id: 35, name: "Yap Geok Hwa", isFather: false },
+  { id: 36, name: "Tan Kim Yam", isFather: true },
+  { id: 37, name: "Mr Tan Sok Kwang", isFather: true },
+  { id: 38, name: "Mrs Tan Sok Kwang", isFather: false },
+  { id: 39, name: "Mr Tan Cheng Guan", isFather: true },
+  { id: 40, name: "Mrs Tan Cheng Guan", isFather: false },
+  { id: 41, name: "Mr Willie Tan", isFather: true },
+  { id: 42, name: "Mrs Willie Tan", isFather: false },
+  { id: 43, name: "Tan Swee Tee", isFather: true },
+  { id: 44, name: "Tan Kok Wah", isFather: true },
+  { id: 45, name: "Hannah", isFather: false },
+  { id: 46, name: "Wayne Tan", isFather: false },
+  { id: 47, name: "Ziilia", isFather: false },
+  { id: 48, name: "Yeo Khee", isFather: false },
+  { id: 49, name: "Jermine", isFather: false },
+  { id: 50, name: "Keith", isFather: true },
+  { id: 51, name: "Jia Jia", isFather: false },
+  { id: 52, name: "Yolanda", isFather: false },
+  { id: 53, name: "Yin Jun Hao", isFather: false },
+  { id: 54, name: "Pei Han", isFather: false },
+  { id: 55, name: "Li Ting", isFather: false },
+  { id: 56, name: "Amelia", isFather: false },
+  { id: 57, name: "Zarchi", isFather: false },
+  { id: 58, name: "Ming Yuan", isFather: false },
+  { id: 59, name: "Darren Oh", isFather: true },
+  { id: 60, name: "Ying Jia", isFather: false },
+  { id: 61, name: "Wei An", isFather: false },
+  { id: 62, name: "Lenise", isFather: false },
+  { id: 63, name: "Lester", isFather: false },
+  { id: 64, name: "Ying Hui", isFather: false },
+  { id: 65, name: "Li Hui", isFather: false },
+  { id: 66, name: "Willie Lum", isFather: true },
+  { id: 67, name: "Ellie Lum", isFather: false },
+  { id: 68, name: "Hui Hui", isFather: false },
+  { id: 69, name: "Choon Keat", isFather: true },
+  { id: 70, name: "Clarice", isFather: false },
+  { id: 71, name: "Alson", isFather: false },
+  { id: 72, name: "Caleb", isFather: false },
+  { id: 73, name: "Stephanie", isFather: false },
+  { id: 74, name: "Wayne Wee", isFather: false },
+  { id: 75, name: "Nicholas Ong", isFather: true },
+  { id: 76, name: "Reine", isFather: false },
+  { id: 77, name: "Tyler", isFather: false },
+  { id: 78, name: "Kah Lun", isFather: false },
+  { id: 79, name: "Jing Ci", isFather: false },
+  { id: 80, name: "Norris", isFather: true },
+  { id: 81, name: "Shi Jie", isFather: true },
+  { id: 82, name: "Yue Jiao", isFather: false },
+  { id: 83, name: "Noelle", isFather: false },
+  { id: 84, name: "Weng Yi", isFather: false },
+  { id: 85, name: "Douglas", isFather: true },
+  { id: 86, name: "Wan Chin", isFather: false },
+  { id: 87, name: "Tina", isFather: false },
+  { id: 88, name: "Jing Ting", isFather: false },
+  { id: 89, name: "Xindi", isFather: false },
+  { id: 90, name: "Valerie", isFather: false },
+  { id: 91, name: "Jolin", isFather: false },
+  { id: 92, name: "Yu Jing", isFather: false },
+  { id: 93, name: "Wei Yang", isFather: false },
+  { id: 94, name: "Hoon Kai", isFather: true },
+  { id: 95, name: "May Lee", isFather: false },
+  { id: 96, name: "Hui Lynn", isFather: false },
+  { id: 97, name: "Li Hiang", isFather: false },
+  { id: 98, name: "Kee Teck", isFather: true },
+  { id: 99, name: "Edwin", isFather: true },
+  { id: 100, name: "Sharon", isFather: false },
+  { id: 101, name: "Tobias", isFather: false },
+  { id: 102, name: "Talia", isFather: false },
+  { id: 103, name: "Eleanor", isFather: false },
+  { id: 104, name: "Kai Rong", isFather: true },
+  { id: 105, name: "Courtney", isFather: false },
+  { id: 106, name: "Emily", isFather: false },
+  { id: 107, name: "Hoon Kwang", isFather: true },
+  { id: 108, name: "Hui Chun", isFather: false },
+  { id: 109, name: "Hui Xuan", isFather: false },
+  { id: 110, name: "Hoon Hwee", isFather: true },
+  { id: 111, name: "Jana", isFather: false },
+  { id: 112, name: "Justin", isFather: true },
+  { id: 113, name: "Irene", isFather: false },
+  { id: 114, name: "Mindy", isFather: false },
+  { id: 115, name: "老姑", isFather: false },
+  { id: 116, name: "Norman", isFather: false },
+  { id: 117, name: "Wai Po", isFather: false },
+  { id: 118, name: "Khin Lin", isFather: false },
+  { id: 119, name: "Bee Yong", isFather: false },
+  { id: 120, name: "Pheng Yee", isFather: true },
+  { id: 121, name: "Roy", isFather: true },
+  { id: 122, name: "Matthias", isFather: false },
+  { id: 123, name: "See Hian", isFather: false },
+  { id: 124, name: "Joy Soon", isFather: false },
+  { id: 125, name: "Clinton", isFather: false },
+  { id: 126, name: "Sam", isFather: true },
+  { id: 127, name: "Serene", isFather: false },
+  { id: 128, name: "Jamie", isFather: false },
+  { id: 129, name: "大舅舅", isFather: true },
+  { id: 130, name: "Darren", isFather: false },
+  { id: 131, name: "Cherie", isFather: false },
+  { id: 132, name: "Lyn", isFather: false },
+  { id: 133, name: "Chuan Woo", isFather: true },
+  { id: 134, name: "Poay Wah", isFather: false },
+  { id: 135, name: "Seng Hiong", isFather: true },
+  { id: 136, name: "Li Li", isFather: false },
+  { id: 137, name: "Cheng Joo", isFather: true },
+  { id: 138, name: "Jasmine", isFather: false },
+  { id: 139, name: "Wan Xin", isFather: true },
+  { id: 140, name: "Dorothy", isFather: false },
+  { id: 141, name: "Max", isFather: false },
+  { id: 142, name: "Samantha", isFather: false },
+  { id: 143, name: "Zuan", isFather: false },
+  { id: 144, name: "Chong Wei", isFather: true },
+  { id: 145, name: "Kai Qi", isFather: false },
+  { id: 146, name: "Vivek", isFather: false },
+  { id: 147, name: "Joel", isFather: true },
+  { id: 148, name: "Siong Gim", isFather: true },
+  { id: 149, name: "Annabel", isFather: false },
+  { id: 151, name: "Bryan Lim", isFather: false },
+  { id: 152, name: "Yeow Xiang", isFather: false },
+  { id: 153, name: "Nicky", isFather: false },
+  { id: 154, name: "Clara", isFather: false },
+  { id: 155, name: "Victor", isFather: false },
+  { id: 156, name: "Shaun", isFather: false },
+  { id: 157, name: "Yiting", isFather: false },
+  { id: 158, name: "Hui Wen", isFather: false },
+  { id: 159, name: "Wong Chong", isFather: false },
+  { id: 160, name: "Chee Kiat", isFather: true },
+  { id: 161, name: "Wei Loong", isFather: true },
+  { id: 162, name: "Mei Ling", isFather: false },
+  { id: 163, name: "Kenny", isFather: true },
+  { id: 164, name: "Alan", isFather: true },
+  { id: 165, name: "David", isFather: true },
+  { id: 166, name: "Sio Peng", isFather: false },
+  { id: 167, name: "Shu Mun", isFather: false },
+  { id: 168, name: "Lien Feng", isFather: true },
+  { id: 169, name: "Caroline", isFather: false },
+  { id: 170, name: "Kevin", isFather: true },
+  { id: 171, name: "Khang Jin", isFather: true },
+  { id: 172, name: "Kwang Yi", isFather: false },
+  { id: 173, name: "Mr.Yee", isFather: true },
+  { id: 174, name: "Nagarajan", isFather: true },
+  { id: 175, name: "Alexis", isFather: false },
+  { id: 176, name: "Xiao Kang", isFather: false },
+  { id: 177, name: "Bryan Ong", isFather: false },
+  { id: 178, name: "Sheng Leong", isFather: true },
+  { id: 179, name: "Dickson", isFather: true },
 ];
 
 // Prize names — edit the text here; add/remove entries to change how many prizes.
 const PRIZE_NAMES: string[] = ["First Prize", "Second Prize", "Third Prize"];
+const FATHER_ONLY_PRIZE_INDEX = PRIZE_NAMES.length - 1;
 
 const COUNTDOWN_SECONDS = 20;
 const RING_RADIUS = 66;
@@ -70,11 +221,11 @@ const CONFETTI_COLORS = ["#bd9648", "#e7cf94", "#8a6a2e", "#fbf6ec", "#cdb275", 
 
 export default function WeddingLuckyDraw() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const [pool, setPool] = useState<string[]>(() => [...GUESTS]);
+  const [excludedGuestIds, setExcludedGuestIds] = useState<Set<number>>(() => new Set());
   const [prizeIndex, setPrizeIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
   const [displayName, setDisplayName] = useState("");
-  const [winner, setWinner] = useState<string | null>(null);
+  const [winner, setWinner] = useState<Guest | null>(null);
   const [timeLeft, setTimeLeft] = useState(COUNTDOWN_SECONDS);
   const [resultText, setResultText] = useState("");
   const [resultKind, setResultKind] = useState<"win" | "late" | null>(null);
@@ -84,6 +235,11 @@ export default function WeddingLuckyDraw() {
   const countdownInterval = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fireRef = useRef<confetti.CreateTypes | null>(null);
+  const isFatherOnlyPrize = prizeIndex === FATHER_ONLY_PRIZE_INDEX;
+  const currentPool = useMemo(() => {
+    const eligibleGuests = isFatherOnlyPrize ? GUESTS.filter((guest) => guest.isFather) : GUESTS;
+    return eligibleGuests.filter((guest) => !excludedGuestIds.has(guest.id));
+  }, [excludedGuestIds, isFatherOnlyPrize]);
 
   // Bind canvas-confetti to our own canvas (inside rootRef) so it still renders
   // when the element is fullscreened — the default global canvas sits on body.
@@ -183,8 +339,8 @@ export default function WeddingLuckyDraw() {
   }, []);
 
   const lockIn = useCallback(
-    (chosen: string) => {
-      setDisplayName(chosen);
+    (chosen: Guest) => {
+      setDisplayName(chosen.name);
       setWinner(chosen);
       setPhase("locked");
       launchConfetti(800); // quick pop as the name locks in
@@ -194,12 +350,12 @@ export default function WeddingLuckyDraw() {
   );
 
   const draw = useCallback(() => {
-    if (pool.length === 0) return;
+    if (currentPool.length === 0 || prizeIndex >= PRIZE_NAMES.length) return;
     setResultText("");
     setResultKind(null);
     setPhase("spinning");
 
-    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    const chosen = currentPool[Math.floor(Math.random() * currentPool.length)];
     let step = 0;
 
     const nextDelay = (s: number) => {
@@ -212,23 +368,29 @@ export default function WeddingLuckyDraw() {
         lockIn(chosen);
         return;
       }
-      const showing = step === SPIN_FLASHES - 1 ? chosen : pool[Math.floor(Math.random() * pool.length)];
-      setDisplayName(showing);
+      const showing = step === SPIN_FLASHES - 1 ? chosen : currentPool[Math.floor(Math.random() * currentPool.length)];
+      setDisplayName(showing.name);
       step += 1;
       spinTimeout.current = window.setTimeout(tick, nextDelay(step));
     };
     tick();
-  }, [pool, lockIn]);
+  }, [currentPool, lockIn, prizeIndex]);
 
   const removeWinnerFromPool = useCallback(() => {
-    setPool((prev) => prev.filter((n) => n !== winner));
+    if (!winner) return;
+    setExcludedGuestIds((prev) => {
+      const next = new Set(prev);
+      next.add(winner.id);
+      return next;
+    });
   }, [winner]);
 
   const award = useCallback(() => {
+    if (!winner) return;
     if (countdownInterval.current) window.clearInterval(countdownInterval.current);
     const prize = PRIZE_NAMES[prizeIndex] ?? `Prize ${prizeIndex + 1}`;
     removeWinnerFromPool();
-    setResultText(`🎉 ${winner} wins the ${prize}!`);
+    setResultText(`🎉 ${winner.name} wins the ${prize}!`);
     setResultKind("win");
     setPhase("result");
     setPrizeIndex((p) => p + 1);
@@ -243,9 +405,17 @@ export default function WeddingLuckyDraw() {
     setPhase("result");
   }, [removeWinnerFromPool]);
 
-  const allDrawn = pool.length === 0;
+  const noPrizesRemaining = prizeIndex >= PRIZE_NAMES.length;
+  const currentPoolEmpty = currentPool.length === 0;
+  const allDrawn = noPrizesRemaining || currentPoolEmpty;
   const drawDisabled = phase === "spinning" || phase === "locked" || phase === "countdown";
-  const currentPrizeLabel = PRIZE_NAMES[prizeIndex] ?? `Prize ${prizeIndex + 1}`;
+  const currentPrizeLabel = PRIZE_NAMES[prizeIndex] ?? "all prizes";
+  const poolDescription = isFatherOnlyPrize ? "father names" : "names";
+  const metaText = noPrizesRemaining
+    ? "All prizes have been drawn"
+    : currentPoolEmpty
+      ? "No eligible names left in this draw"
+      : `${currentPool.length} ${currentPool.length === 1 ? poolDescription.replace("s", "") : poolDescription} still in the draw`;
 
   const nameClass = (() => {
     if (phase === "idle" || (phase === "result" && resultKind === "late")) {
@@ -361,9 +531,7 @@ export default function WeddingLuckyDraw() {
           </button>
         </div>
 
-        <div className="wd-meta">
-          {pool.length} {pool.length === 1 ? "name" : "names"} still in the draw
-        </div>
+        <div className="wd-meta">{metaText}</div>
       </div>
 
       <canvas ref={canvasRef} className="wd-confetti-canvas" tabIndex={-1} aria-hidden="true" />
